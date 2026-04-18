@@ -4,9 +4,9 @@ FindPage.ai is a study assistant built for one job: help you quickly find the ex
 
 Live: `https://findpage-ai.vercel.app`
 
-![Next.js](https://img.shields.io/badge/Next.js-14-black)
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
-![Gemini AI](https://img.shields.io/badge/Gemini AI-3.0+-blue)
+![Gemini AI](https://img.shields.io/badge/Gemini-AI-blue)
 ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-blue)
 
 ---
@@ -60,7 +60,7 @@ Navigate to `http://localhost:3000` and start uploading your textbooks!
 |-----------|------------|
 | **Core** | Next.js 16 (App Router) |
 | **Logic** | TypeScript |
-| **Styling** | Vanilla CSS + Tailwind (Apple-inspired Design System) |
+| **Styling** | Tailwind + custom CSS (glassmorphism UI) |
 | **AI Engine**| Google Gemini (Embeddings + Flash Model) |
 | **Parsing** | pdfjs-dist |
 
@@ -70,16 +70,16 @@ Navigate to `http://localhost:3000` and start uploading your textbooks!
 
 1. **Upload**: Drag & drop your teacher's PDF or your textbook.
 2. **Index**: Wait a few seconds for FindPage.ai to semantically index the text.
-3. **Ask**: Type your assignment question.
-4. **Verify**: Click the generated page numbers to view the source text and confirm the answer.
-5. **Copy**: Use the copy button to grab the reference for your citations.
+3. **Ask**: Ask a question (or use Batch mode for many questions).
+4. **Verify**: Use the source previews to confirm the answer in-context.
+5. **Copy**: Copy page numbers or copy/download page images into your notes.
 
 ## Deploying To Vercel
 
 1. Push this repo to GitHub.
 2. Import the project into Vercel.
 3. Set `NEXT_PUBLIC_SITE_URL` to `https://findpage-ai.vercel.app` (or your custom domain).
-4. (Optional) If you want a shared server-side key instead of user-provided keys, set `GEMINI_API_KEY`.
+4. (Optional) Set `GEMINI_API_KEY` if you want a shared server-side key (otherwise users can paste their own key in Settings).
 5. Deploy.
 
 ---

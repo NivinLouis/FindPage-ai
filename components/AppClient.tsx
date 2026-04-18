@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import PDFUploader from '@/components/PDFUploader';
 
@@ -487,8 +488,9 @@ export default function AppClient() {
       <header className="sticky top-0 z-40">
         <div className="mx-auto max-w-7xl px-4 py-4">
           <div className="glass-chrome glass-radius px-4 py-3 flex items-center justify-between gap-3">
-            <Link href="/" className="text-sm font-semibold tracking-tight" title="Home">
-              FindPage.ai
+            <Link href="/" className="flex items-center gap-2.5" title="Home">
+              <Image src="/logo.svg" alt="FindPage.ai" width={22} height={22} priority />
+              <span className="text-sm font-semibold tracking-tight">FindPage.ai</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-2 text-xs text-[color:var(--muted)]">

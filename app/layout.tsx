@@ -12,7 +12,10 @@ export const metadata: Metadata = {
   description: siteDescription,
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/logo.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico" },
+    ],
   },
   keywords: [
     "PDF",
