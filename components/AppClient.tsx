@@ -5,6 +5,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import PDFUploader from '@/components/PDFUploader';
+import {
+  cosineSimilarity,
+  generateAnswerClient,
+  generateEmbeddingClient,
+  getRateLimitMessage,
+  isRateLimitLikeError,
+} from '@/lib/geminiClient';
 
 interface DocumentChunk {
   text: string;
@@ -189,13 +196,6 @@ export default function AppClient() {
   const openUploaderRef = useRef<(() => void) | null>(null);
   const promptedForApiKeyRef = useRef(false);
 
-  const headerForRequests = useMemo(() => {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    const key = apiKey.trim();
-    if (key) headers['x-api-key'] = key;
-    return headers;
-  }, [apiKey]);
-
   useEffect(() => {
     if (!error) return;
     const timer = setTimeout(() => setError(null), 5000);
@@ -208,9 +208,17 @@ export default function AppClient() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  const trackUsage = useCallback((pages: number, chars: number) => {
+  const trackIndexing = useCallback((pages: number, chars: number) => {
     setUsage((prev) => ({
       pagesIndexed: prev.pagesIndexed + pages,
+      questionsAsked: prev.questionsAsked,
+      charactersProcessed: prev.charactersProcessed + chars,
+    }));
+  }, []);
+
+  const trackQuestion = useCallback((chars: number) => {
+    setUsage((prev) => ({
+      pagesIndexed: prev.pagesIndexed,
       questionsAsked: prev.questionsAsked + 1,
       charactersProcessed: prev.charactersProcessed + chars,
     }));
@@ -317,46 +325,61 @@ export default function AppClient() {
 
   const handleUploadComplete = useCallback(
     async (pages: { pageNumber: number; content: string; image?: string }[], fileName: string) => {
+      const key = apiKey.trim();
+      if (!key) {
+        setShowSettings(true);
+        setToast('Add your API key to upload PDFs.');
+        promptedForApiKeyRef.current = true;
+        return;
+      }
+
       const newDoc = { name: fileName, pages };
       setDocuments((prev) => [...prev, newDoc]);
       setShowLanding(false);
 
       setEmbedLoading(true);
       try {
-        const textChunks = pages.map((page) => ({
-          text: page.content,
-          pageNumber: page.pageNumber,
-          documentName: fileName,
-          image: page.image,
-        }));
+        const nextChunks: DocumentChunk[] = [];
+        let pagesTextLen = 0;
 
-        const response = await fetch('/api/embed', {
-          method: 'POST',
-          headers: headerForRequests,
-          body: JSON.stringify({ chunks: textChunks }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data.error || 'Failed to process document');
-          return;
+        for (const page of pages) {
+          pagesTextLen += page.content.length;
+          const embedding = await generateEmbeddingClient(page.content, key);
+          nextChunks.push({
+            text: page.content,
+            pageNumber: page.pageNumber,
+            documentName: fileName,
+            image: page.image,
+            embedding,
+          });
         }
 
-        if (data.chunks) setChunks((prev) => [...prev, ...data.chunks]);
-        if (data.usage) trackUsage(data.usage.pagesIndexed || 0, data.usage.pagesText || 0);
+        setChunks((prev) => [...prev, ...nextChunks]);
+        trackIndexing(pages.length, pagesTextLen);
       } catch (err) {
         console.error('Failed to embed document:', err);
-        setError('Failed to index PDF.');
+        if (isRateLimitLikeError(err)) {
+          setError(getRateLimitMessage(err));
+        } else {
+          setError('Failed to index PDF.');
+        }
       } finally {
         setEmbedLoading(false);
       }
     },
-    [headerForRequests, trackUsage]
+    [apiKey, trackIndexing]
   );
 
   const handleAskQuestion = useCallback(
     async (q?: string) => {
+      const key = apiKey.trim();
+      if (!key) {
+        setShowSettings(true);
+        setToast('Add your API key to ask questions.');
+        promptedForApiKeyRef.current = true;
+        return;
+      }
+
       const currentQuestion = (q ?? question).trim();
       if (!currentQuestion || chunks.length === 0) return;
 
@@ -364,38 +387,56 @@ export default function AppClient() {
       setAnswer(null);
 
       try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: headerForRequests,
-          body: JSON.stringify({ question: currentQuestion, chunks, sourcesCount }),
-        });
+        const questionEmbedding = await generateEmbeddingClient(currentQuestion, key);
+        const resultsWithSimilarity = chunks
+          .map((chunk) => ({
+            ...chunk,
+            similarity: cosineSimilarity(questionEmbedding, chunk.embedding),
+          }))
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, sourcesCount);
 
-        const data = await response.json();
+        const context = resultsWithSimilarity
+          .map((r) => `[Page ${r.pageNumber} from ${r.documentName}]\n${r.text}`)
+          .join('\n\n');
 
-        if (!response.ok) {
-          setError(data.error || 'Failed to get answer');
-          return;
-        }
+        const answerText = await generateAnswerClient(currentQuestion, context, key);
 
-        if (data.answer) {
-          const answerData = { text: data.answer, sources: data.sources ?? [] };
-          setAnswer(answerData);
-          saveChatHistory(currentQuestion, answerData);
-          setToast('Answer ready.');
-        }
+        const sources = resultsWithSimilarity.map((r) => ({
+          pageNumber: r.pageNumber,
+          documentName: r.documentName,
+          similarity: r.similarity,
+          image: r.image,
+        }));
 
-        if (data.usage) trackUsage(0, data.usage.charactersProcessed || 0);
+        const answerData = { text: answerText, sources };
+        setAnswer(answerData);
+        saveChatHistory(currentQuestion, answerData);
+        setToast('Answer ready.');
+        trackQuestion(context.length + currentQuestion.length);
       } catch (err) {
         console.error('Failed to get answer:', err);
-        setError('Failed to get answer.');
+        if (isRateLimitLikeError(err)) {
+          setError(getRateLimitMessage(err));
+        } else {
+          setError('Failed to get answer.');
+        }
       } finally {
         setLoading(false);
       }
     },
-    [chunks, headerForRequests, question, saveChatHistory, sourcesCount, trackUsage]
+    [apiKey, chunks, question, saveChatHistory, sourcesCount, trackQuestion]
   );
 
   const handleBatchQuestions = useCallback(async () => {
+    const key = apiKey.trim();
+    if (!key) {
+      setShowSettings(true);
+      setToast('Add your API key to ask questions.');
+      promptedForApiKeyRef.current = true;
+      return;
+    }
+
     const questions = batchQuestions
       .split('\n')
       .map((q) => q.trim())
@@ -407,26 +448,45 @@ export default function AppClient() {
 
     try {
       for (const q of questions) {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: headerForRequests,
-          body: JSON.stringify({ question: q, chunks, sourcesCount }),
-        });
-        const data = await response.json();
-        if (data.answer) {
-          const answerData = { text: data.answer, sources: data.sources ?? [] };
-          saveChatHistory(q, answerData);
-        }
+        const questionEmbedding = await generateEmbeddingClient(q, key);
+        const resultsWithSimilarity = chunks
+          .map((chunk) => ({
+            ...chunk,
+            similarity: cosineSimilarity(questionEmbedding, chunk.embedding),
+          }))
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, sourcesCount);
+
+        const context = resultsWithSimilarity
+          .map((r) => `[Page ${r.pageNumber} from ${r.documentName}]\n${r.text}`)
+          .join('\n\n');
+
+        const answerText = await generateAnswerClient(q, context, key);
+
+        const sources = resultsWithSimilarity.map((r) => ({
+          pageNumber: r.pageNumber,
+          documentName: r.documentName,
+          similarity: r.similarity,
+          image: r.image,
+        }));
+
+        const answerData = { text: answerText, sources };
+        saveChatHistory(q, answerData);
+        trackQuestion(context.length + q.length);
       }
       setBatchQuestions('');
       setToast('Batch complete.');
     } catch (err) {
       console.error('Failed to get batch answers:', err);
-      setError('Batch failed.');
+      if (isRateLimitLikeError(err)) {
+        setError(getRateLimitMessage(err));
+      } else {
+        setError('Batch failed.');
+      }
     } finally {
       setLoading(false);
     }
-  }, [batchQuestions, chunks, headerForRequests, saveChatHistory, sourcesCount]);
+  }, [apiKey, batchQuestions, chunks, saveChatHistory, sourcesCount, trackQuestion]);
 
   const answerPages = useMemo(() => (answer ? parsePageNumbers(answer.text) : null), [answer]);
 
@@ -670,7 +730,7 @@ export default function AppClient() {
                     <div className="mt-4 glass-border glass-radius p-4 animate-fade-in">
                       <div className="text-xs font-semibold text-[color:var(--faint)]">Before you start</div>
                       <div className="mt-2 text-sm text-[color:var(--muted)]">
-                        FindPage.ai uses Gemini. When you press Upload, we’ll ask for your API key once.
+                        FindPage.ai uses Gemini. When you press Upload, we’ll ask for your API key once. Your key is stored locally in your browser.
                       </div>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <button
@@ -1215,7 +1275,7 @@ export default function AppClient() {
               <label className="block">
                 <div className="text-xs font-semibold text-[color:var(--faint)]">Gemini API key</div>
                 <div className="mt-1 text-sm text-[color:var(--muted)]">
-                  Stored locally. Sent to your own server routes via `x-api-key`.
+                  Stored locally in your browser. Used for client-side calls to Gemini.
                 </div>
                 <input
                   type="password"

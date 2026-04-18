@@ -79,8 +79,10 @@ Navigate to `http://localhost:3000` and start uploading your textbooks!
 1. Push this repo to GitHub.
 2. Import the project into Vercel.
 3. Set `NEXT_PUBLIC_SITE_URL` to `https://findpage-ai.vercel.app` (or your custom domain).
-4. (Optional) Set `GEMINI_API_KEY` if you want a shared server-side key (otherwise users can paste their own key in Settings).
-5. Deploy.
+4. Deploy.
+
+Notes:
+- Users paste their own Gemini API key in Settings (stored locally in the browser).
 
 ---
 
