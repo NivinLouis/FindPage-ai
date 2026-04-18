@@ -1053,7 +1053,7 @@ export default function AppClient() {
                                 <div className="px-3 py-2 flex items-center justify-between gap-2">
                                   <div className="min-w-0">
                                     <div className="text-xs font-semibold truncate">
-                                      Page {source.pageNumber}
+                                      {source.pageNumber}
                                     </div>
                                     <div className="text-xs text-[color:var(--muted)] truncate">
                                       {source.documentName}
@@ -1257,7 +1257,7 @@ export default function AppClient() {
                         <div className="p-3 text-xs text-[color:var(--muted)]">No preview</div>
                       )}
                       <div className="px-3 py-2 text-xs text-[color:var(--muted)]">
-                        Page {page.pageNumber}
+                        {page.pageNumber}
                       </div>
                     </button>
                   ))}
