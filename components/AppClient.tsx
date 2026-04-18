@@ -573,12 +573,12 @@ export default function AppClient() {
                 <div className="text-xs font-semibold text-[color:var(--faint)]">Welcome</div>
                 <h1 className="mt-3 text-3xl sm:text-4xl md:text-6xl font-semibold tracking-tight leading-[1.05]">
                   Study with confidence.
-                  <span className="block text-[color:var(--muted)]">find exact page numbers from your documents with AI</span>
+                  <span className="block text-[color:var(--muted)]">Find exact page numbers from your documents with AI</span>
                 </h1>
-                  <p className="mt-4 max-w-2xl text-base md:text-lg text-[color:var(--muted)]">
-                    FindPage.ai helps you bridge the gap between AI answers and your study materials. Ask a question,
-                    jump to the <strong>exact page reference</strong>, and verify every answer against your teacher&apos;s PDFs.
-                  </p>
+                <p className="mt-4 max-w-2xl text-base md:text-lg text-[color:var(--muted)]">
+                  FindPage.ai helps you bridge the gap between AI answers and your study materials. Ask a question,
+                  jump to the <strong>exact page reference</strong>, and verify every answer against your teacher&apos;s PDFs.
+                </p>
 
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   <button
