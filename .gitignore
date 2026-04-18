@@ -47,9 +47,21 @@ next-env.d.ts
 
 # AI / Agent files (do not commit)
 AGENTS.md
+agents.md
+CLAUDE.md
+claude.md
 *.agent.md
 .agents/
 agent_*.ts
 agent_*.js
 *.tool.ts
 *.skill.md
+
+# LLM/AI local artifacts (do not commit)
+.models.json
+.codex/
+.cursor/
+.windsurf/
+.cline/
+.aider*
+.llm*
