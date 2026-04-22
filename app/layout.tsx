@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { siteDescription, siteName, siteUrl } from "@/lib/site";
+import {
+  authorDescription,
+  authorEmail,
+  authorGithub,
+  authorLinkedIn,
+  authorName,
+  siteDescription,
+  siteKeywords,
+  siteName,
+  siteTitle,
+  siteUrl,
+} from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: {
-    default: "FindPage.ai",
-    template: `%s | ${siteName}`,
-  },
+  title: siteTitle,
   applicationName: siteName,
   description: siteDescription,
   manifest: "/manifest.webmanifest",
@@ -17,25 +25,15 @@ export const metadata: Metadata = {
       { url: "/favicon.ico" },
     ],
   },
-  keywords: [
-    "PDF",
-    "PDF search",
-    "page finder",
-    "study assistant",
-    "students",
-    "textbook",
-    "source verification",
-    "notes",
-    "Gemini",
-    "AI",
-    "FindPage.ai",
-  ],
-  authors: [{ name: "Nivin" }],
+  keywords: [...siteKeywords],
+  authors: [{ name: authorName, url: authorGithub }],
+  creator: authorName,
+  publisher: authorName,
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: siteName,
+    title: `${siteName} | ${authorName}`,
     description: siteDescription,
     url: "/",
     siteName,
@@ -51,7 +49,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: siteName,
+    title: `${siteName} | ${authorName}`,
     description: siteDescription,
     images: ["/twitter-image"],
   },
@@ -79,16 +77,23 @@ export default function RootLayout({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": siteName,
-    "operatingSystem": "Web",
-    "applicationCategory": "EducationalApplication",
-    "description": siteDescription,
-    "url": siteUrl,
-    "offers": {
+    name: siteName,
+    operatingSystem: "Web",
+    applicationCategory: "EducationalApplication",
+    description: siteDescription,
+    url: siteUrl,
+    author: {
+      "@type": "Person",
+      name: authorName,
+      email: authorEmail,
+      description: authorDescription,
+      sameAs: [authorGithub, authorLinkedIn],
+    },
+    offers: {
       "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    }
+      price: "0",
+      priceCurrency: "USD",
+    },
   };
 
   return (

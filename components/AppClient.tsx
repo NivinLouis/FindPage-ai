@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { authorGithub, authorLinkedIn, authorName } from '@/lib/site';
 import PDFUploader from '@/components/PDFUploader';
 import {
   cosineSimilarity,
@@ -1327,7 +1328,27 @@ export default function AppClient() {
 
       <footer className="mx-auto max-w-7xl px-4 py-12 text-center text-xs text-[color:var(--faint)]">
         <div className="flex flex-col items-center gap-4">
-          <p>FindPage.ai • Built for students who value accuracy.</p>
+          <p className="flex flex-wrap items-center justify-center gap-2">
+            <span>Built by {authorName}</span>
+            <span aria-hidden="true">·</span>
+            <Link
+              href={authorGithub}
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-4 transition hover:text-[color:var(--fg)]"
+            >
+              GitHub
+            </Link>
+            <span aria-hidden="true">·</span>
+            <Link
+              href={authorLinkedIn}
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-4 transition hover:text-[color:var(--fg)]"
+            >
+              LinkedIn
+            </Link>
+          </p>
           <p className="max-w-md mx-auto opacity-60">
             FindPage.ai uses advanced AI to synthesize answers from your PDF documents. Always verify generated answers against the source page provided.
           </p>
